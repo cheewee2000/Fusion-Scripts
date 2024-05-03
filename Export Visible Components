@@ -1,0 +1,50 @@
+import adsk.core, adsk.fusion, adsk.cam, os
+
+def run(context):
+    ui = None
+    try:
+        app = adsk.core.Application.get()
+        ui = app.userInterface
+        design = app.activeProduct
+
+        # Path to save the files - adjust the path to your Desktop
+        desktop_path = os.path.expanduser("~/Desktop")
+        
+        # Ensure the path exists
+        if not os.path.exists(desktop_path):
+            os.makedirs(desktop_path)
+
+        # Get the root component of the active design
+        root_comp = design.rootComponent
+
+        # Function to recursively export visible components
+        def export_visible_components(component):
+            for occ in component.occurrences:
+                if occ.isVisible:  # Checking if the occurrence is visible
+                    # Define the file name and path
+                    filename = f"{occ.component.name}.step"
+                    file_path = os.path.join(desktop_path, filename)
+                    
+                    # Create export options
+                    exportMgr = design.exportManager
+                    step_options = exportMgr.createSTEPExportOptions(file_path, occ.component)
+                    
+                    # Export the component
+                    exportMgr.execute(step_options)
+                    
+                    # Recursively export visible sub-components
+                    export_visible_components(occ.component)
+
+        # Start the export with the root component
+        export_visible_components(root_comp)
+        
+        # Display a message when the export is done
+        ui.messageBox('Export complete!')
+
+    except Exception as e:
+        if ui:
+            ui.messageBox('Failed:\n{}'.format(str(e)))
+
+    finally:
+        # Optionally, you can add cleanup code here if needed
+        pass
